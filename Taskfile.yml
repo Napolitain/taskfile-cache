@@ -10,4 +10,4 @@ tasks:
     generates:
       - bin/helloworld
     cmds:
-      - scripts/build-cache.sh
+      - go run ./cmd/task-cache --task build -- go build -o bin/helloworld .
