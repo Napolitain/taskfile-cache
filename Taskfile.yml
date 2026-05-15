@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the helloworld binary
+    method: checksum
+    sources:
+      - go.*
+      - '**/*.go'
+    generates:
+      - bin/helloworld
+    cmds:
+      - scripts/build-cache.sh
