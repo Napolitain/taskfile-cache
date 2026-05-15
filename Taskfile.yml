@@ -3,11 +3,26 @@ version: '3'
 tasks:
   build:
     desc: Build the helloworld binary
+    deps:
+      - task-cache
     method: checksum
     sources:
       - go.*
-      - '**/*.go'
+      - '*.go'
     generates:
       - bin/helloworld
     cmds:
-      - go run ./cmd/task-cache --task build -- go build -o bin/helloworld .
+      - bin/task-cache --task build -- go build -o bin/helloworld .
+
+  task-cache:
+    desc: Build the Task cache helper
+    internal: true
+    method: checksum
+    sources:
+      - go.*
+      - cmd/task-cache/**/*.go
+    generates:
+      - bin/task-cache
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/task-cache ./cmd/task-cache
