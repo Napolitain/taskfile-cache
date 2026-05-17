@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release task-cache linux amd64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build task-cache linux amd64
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -trimpath \
+            -ldflags="-s -w" \
+            -o dist/task-cache-linux-amd64 \
+            ./cmd/task-cache
+          chmod +x dist/task-cache-linux-amd64
+
+      - name: Compute release metadata
+        id: release
+        run: |
+          date="$(date -u +%Y-%m-%d)"
+          hash="$(git rev-parse --short=12 HEAD)"
+          tag="${date}-${hash}"
+          {
+            echo "tag=$tag"
+            echo "title=$tag"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          TITLE: ${{ steps.release.outputs.title }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/task-cache-linux-amd64 --clobber
+          else
+            gh release create "$TAG" \
+              dist/task-cache-linux-amd64 \
+              --title "$TITLE" \
+              --target "$GITHUB_SHA" \
+              --notes "Automated linux/amd64 task-cache release for $GITHUB_SHA"
+          fi
